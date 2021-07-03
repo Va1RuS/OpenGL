@@ -6,98 +6,33 @@
 #include <string>
 #include <sstream>
 
+#include "Renderer.h"
+#include "VertexBuffer.h"
+#include "IndexBuffer.h"
+#include "VertexArray.h"
+#include "VertexBufferLayout.h"
+#include "Texture.h"
+#include "glm/glm.hpp"
+#include "glm/gtc/matrix_transform.hpp"
 
-struct ShaderProgramSource
-{
-	std::string vertexSource;
-	std::string fragmentSource;
-};
+#include "Shader.h"
 
-static ShaderProgramSource parseShader(const std::string& filePath)
-{
-	std::fstream stream(filePath);
+#include "Colour.h"
 
-	enum class ShaderType
-	{
-		NONE = -1, VERTEX = 0, FRAGMENT = 1
-	};
-
-	std::string line;
-	std::stringstream ss[2];
-	ShaderType type = ShaderType::NONE;
-	while (getline(stream, line))
-	{
-
-		if (line.find("#shader") != std::string::npos)
-		{
-			if (line.find("vertex") != std::string::npos)
-			{
-				type = ShaderType::VERTEX;
-			}
-			else if (line.find("fragment") != std::string::npos)
-			{
-				type = ShaderType::FRAGMENT;
-			}
-		}
-		else
-		{
-			ss[(int)type] << line << '\n';
-		}
-	}
-
-	return { ss[0].str(), ss[1].str() };
-}
-
-static unsigned int compileShader(unsigned int type, const std::string& source)
-{
-	unsigned int id = glCreateShader(type);
-	const char* src = source.c_str();
-	glShaderSource(id, 1, &src, nullptr);
-	glCompileShader(id);
-
-	// Error handling 
-	int result;
-	glGetShaderiv(id, GL_COMPILE_STATUS, &result);
-	if (result == GL_FALSE)
-	{
-		int length;
-		glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length);
-		
-		char* message = (char*)alloca(length * sizeof(char));
-		glGetShaderInfoLog(id, length, &length, message);
-		std::cout << "Failed to compile " << (type == GL_FRAGMENT_SHADER ? "fragment" : "vertex") << " shader!" << std::endl;
-		std::cout << message << std::endl;
-		glDeleteShader(id);
-		return 0;
-	}
-
-	return id;
-}
-
-static int createShader(const std::string& vertexShader, const std::string& fragmentShader)
-{
-	unsigned int program = glCreateProgram();
-	unsigned int vs = compileShader(GL_VERTEX_SHADER, vertexShader);
-	unsigned int fs = compileShader(GL_FRAGMENT_SHADER, fragmentShader);
-
-	glAttachShader(program, vs);
-	glAttachShader(program, fs);
-	glLinkProgram(program);
-	glValidateProgram(program);
-	
-	glDeleteShader(vs);
-	glDeleteShader(fs);
-
-	return program;
-}
 
 int main(void)
 {
+	
 	GLFWwindow* window;
 
 	/* Initialize the library */
 	if (!glfwInit())
 		return -1;
+
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+	glfwWindowHint(GLFW_OPENGL_ANY_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
 
 
 	/* Create a windowed mode window and its OpenGL context */
@@ -111,53 +46,104 @@ int main(void)
 	/* Make the window's context current */
 	glfwMakeContextCurrent(window);
 
+	glfwSwapInterval(1);
+
+
 	// glew init
 	if (glewInit() != GLEW_OK)
 	{
 		std::cout << "Glew init ERROR!" << std::endl;
 	}
 
-	std::cout << "GL version: " << glGetString(GL_VERSION);
+	std::cout << "GL version: " << glGetString(GL_VERSION) << std::endl;
 
 	// Modern way, buffer holds the integer of the specific shader
-	
-	float positions[6] = {
-		-0.5f, -0.5f,
-		 0.0f,  0.5f,
-		 0.5f, -0.5f
-	};
-
-	unsigned int buffer;
-	glGenBuffers(1, &buffer);
-	glBindBuffer(GL_ARRAY_BUFFER, buffer);
-	glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(float), positions, GL_STATIC_DRAW);
-
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0);
-
-	ShaderProgramSource shaderSource = parseShader("res/shaders/Basic.shader");
-	unsigned int shader = createShader(shaderSource.vertexSource, shaderSource.fragmentSource);
-	glUseProgram(shader);
-
-	/* Loop until the user closes the window */
-	while (!glfwWindowShouldClose(window))
 	{
-		/* Render here */
-		glClear(GL_COLOR_BUFFER_BIT);
+		float positions[] = {
+			-0.5f, -0.5f, /* 0   3-----2*/ 0.0f, 0.0f,
+			 0.5f, -0.5f, /* 1	 |   / |*/ 1.0f, 0.0f,
+			 0.5f, 0.5f,  /* 2	 | /   |*/ 1.0f, 1.0f,
+			-0.5f, 0.5f,  /* 3	 0-----1*/ 0.0f, 1.0f,
+		};
+
+		unsigned int indices[] = {
+			0, 1, 2, //first triangle
+			2, 3, 0  //second triangle
+		};
 
 
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		GLCall(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+		GLCall(glEnable(GL_BLEND));
+
+		VertexArray va;
+		
+		VertexBuffer vb(positions, 4 * 4 * sizeof(float));  //binds by default
+
+		VertexBufferLayout layout;
+		layout.push<float>(2);
+		layout.push<float>(2);
+		va.addBuffer(vb, layout);
+
+		IndexBuffer ib(indices, 6);  //binds by default
+
+		glm::mat4 proj = glm::ortho(-2.0f, 2.0f, -1.5f, 1.5f, -1.0f, 1.f);
+		
+
+		Shader shader("res/shaders/Basic.shader");
+		shader.bind();
+		shader.setUniformMatrix4f("u_MVP", proj);
+		
+		Texture texture("res/textures/cherno.png");
+		texture.bind();
+		shader.setUniform1i("u_texture", 0); /*we have to match the slot in texture.bind() method*/
+
+		va.unbind();
+		vb.unbind();
+		ib.unbind();
+		shader.unbind();
+
+		Renderer renderer;
+
+		float r, g, b, a, increment;
+		r = 1.0f, g = 0.8f, b = 0.8f, a = 1.0f, increment = 0.05f;
+
+		/* Loop until the user closes the window */
+		while (!glfwWindowShouldClose(window))
+		{
+			/* Render here */
+			renderer.clear();
+
+			/*If we are drawing different kinds of stuff, VertexAttrib might be different as well as buffer and ibo
+			we end upo actually calling  it everytime
+			1.bind shader
+			2.bind vertex array
+			3.bind index buffer
+			4.draw call
+
+			*/
+			shader.bind();
+
+			/*u_color is address of */
+			//shader.setUniform4f("u_color", r, g, b, a);
+			
+			renderer.draw(va, ib, shader);
 
 
-		/* Swap front and back buffers */
-		glfwSwapBuffers(window);
+			/*if (r > 1.00f || r < 0.00f)
+			{
+				increment = (-1) * increment;
+			}
 
-		/* Poll for and process events */
-		glfwPollEvents();
+			r += increment;*/
+
+
+			/* Swap front and back buffers */
+			GLCall(glfwSwapBuffers(window));
+
+			/* Poll for and process events */
+			GLCall(glfwPollEvents());
+		}
 	}
-	
-	glDeleteProgram(shader);
-
 	glfwTerminate();
 	return 0;
 }
