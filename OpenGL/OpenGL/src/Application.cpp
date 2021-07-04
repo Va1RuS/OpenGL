@@ -36,7 +36,7 @@ int main(void)
 
 
 	/* Create a windowed mode window and its OpenGL context */
-	window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
+	window = glfwCreateWindow(1280, 957, "Hello World", NULL, NULL);
 	if (!window)
 	{
 		glfwTerminate();
@@ -86,14 +86,17 @@ int main(void)
 
 		IndexBuffer ib(indices, 6);  //binds by default
 
-		glm::mat4 proj = glm::ortho(-2.0f, 2.0f, -1.5f, 1.5f, -1.0f, 1.f);
-		
+		glm::mat4 proj	= glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.f); // should be -2.0f, 2.0f, -1.5f, 1.5f, -1.0f, 1.f if we want to scale image on 4x3 window
+		glm::mat4 view	= glm::translate(glm::mat4(1.0f), glm::vec3(-0.5f, 0.0f, 0.0f));
+		glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(0.5f, 0.5f, 0.0f));
 
+		glm::mat4 mvp = proj * view * model; //because of memory layout opengl except matrices are multipolied from right to left
+		
 		Shader shader("res/shaders/Basic.shader");
 		shader.bind();
-		shader.setUniformMatrix4f("u_MVP", proj);
+		shader.setUniformMatrix4f("u_MVP", mvp);
 		
-		Texture texture("res/textures/cherno.png");
+		Texture texture("res/textures/naruto.png");
 		texture.bind();
 		shader.setUniform1i("u_texture", 0); /*we have to match the slot in texture.bind() method*/
 
