@@ -7,6 +7,10 @@
 #include "Renderer.h"
 
 
+
+
+
+
 class Colour
 {
 private:
@@ -45,6 +49,9 @@ public:
 	//Colour		operator+(const Colour& other) const;
 	//Colour		operator-(const Colour& other) const;
 	//Colour		operator*(float scalar) const;
+
+
+
 
 
 };

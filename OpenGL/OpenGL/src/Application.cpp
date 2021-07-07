@@ -19,9 +19,38 @@
 
 #include "Colour.h"
 
+#include "imgui/imgui_impl_glfw.h"
+#include "imgui/imgui_impl_opengl3.h"
+#include "imgui/imgui.h"
+
+
+
 
 int main(void)
 {
+	/*float rr, gg, bb, hh, ss, vv;
+	unsigned char rr_int, gg_int, bb_int;
+	rr_int = 255;
+	gg_int = 20;
+	bb_int = 30;
+	rr = rr_int / 255.0f;
+	gg = gg_int / 255.0f;
+	bb = bb_int / 255.0f;
+	std::cout << (int)rr_int << " " << (int)gg_int << " " << (int)bb_int << " " << std::endl;;
+	
+	RGBtoHSV(rr_int, gg_int, bb_int, hh, ss, vv);
+
+	std::cout << hh << " " << ss * 100 << " " << vv * 100 << " " << std::endl;
+
+	HSVtoRGB(hh, ss, vv, rr_int, gg_int, bb_int);*/
+	/*ImGui::ColorConvertRGBtoHSV(rr, gg, bb, hh, ss, vv);
+	ImGui::ColorConvertHSVtoRGB(hh, ss, vv, rr, gg, bb);*/
+	
+	/*rr_int = rr * 255;
+	gg_int = gg * 255;
+	bb_int = bb * 255;*/
+	//std::cout  << (int)rr_int << " " << (int)gg_int << " " << (int)bb_int << " "<<std::endl;
+	
 	
 	GLFWwindow* window;
 
@@ -96,7 +125,7 @@ int main(void)
 		shader.bind();
 		shader.setUniformMatrix4f("u_MVP", mvp);
 		
-		Texture texture("res/textures/naruto.png");
+		Texture texture("res/textures/test.png");
 		texture.bind();
 		shader.setUniform1i("u_texture", 0); /*we have to match the slot in texture.bind() method*/
 
@@ -107,6 +136,20 @@ int main(void)
 
 		Renderer renderer;
 
+		// IMGUI 
+		IMGUI_CHECKVERSION();
+		ImGui::CreateContext();
+		ImGuiIO& io = ImGui::GetIO(); (void)io;
+		ImGui::StyleColorsDark();
+		ImGui_ImplGlfw_InitForOpenGL(window, true);
+		ImGui_ImplOpenGL3_Init((char*)glGetString(GL_NUM_SHADING_LANGUAGE_VERSIONS));
+
+
+		float h, s, v, h_prev, s_prev, v_prev;
+		h = s = v = h_prev = s_prev = v_prev = 0.0f;
+		ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+
 		float r, g, b, a, increment;
 		r = 1.0f, g = 0.8f, b = 0.8f, a = 1.0f, increment = 0.05f;
 
@@ -116,14 +159,11 @@ int main(void)
 			/* Render here */
 			renderer.clear();
 
-			/*If we are drawing different kinds of stuff, VertexAttrib might be different as well as buffer and ibo
-			we end upo actually calling  it everytime
-			1.bind shader
-			2.bind vertex array
-			3.bind index buffer
-			4.draw call
+			// IMGUI before actual code
+			ImGui_ImplOpenGL3_NewFrame();
+			ImGui_ImplGlfw_NewFrame();
+			ImGui::NewFrame();
 
-			*/
 			shader.bind();
 
 			/*u_color is address of */
@@ -139,6 +179,45 @@ int main(void)
 
 			r += increment;*/
 
+			//IMGUI
+			{
+
+				static int counter = 0;
+
+				ImGui::Begin("HSV options");							// Create a window called "Hello, world!" and append into it.
+
+				ImGui::Text("Addust these values as desired");			// Display some text (you can use a format strings too)
+
+				ImGui::SliderFloat("h", &h, -1.0f, 1.0f);				// Edit 1 float using a slider from 0.0f to 1.0f
+				ImGui::SliderFloat("s", &s, -1.0f, 1.0f);				// Edit 1 float using a slider from 0.0f to 1.0f
+				ImGui::SliderFloat("v", &v, -1.0f, 1.0f);				// Edit 1 float using a slider from 0.0f to 1.0f
+				ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+
+				if (ImGui::Button("Button"))								// Buttons return true when clicked (most widgets return true when edited/activated)
+				{
+					if (h != h_prev || s != s_prev || v != v_prev)
+					{
+						h_prev = h;
+						s_prev = s;
+						v_prev = v;
+						texture.updateTexture(h, s, v);
+						texture.bind();
+					}
+					counter++;
+				}
+				ImGui::SameLine();
+				ImGui::Text("counter = %d", counter);
+
+				ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+				ImGui::End();
+				
+				
+			}
+
+			//IMGUI END
+			//IMGUI Render
+			ImGui::Render();
+			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 			/* Swap front and back buffers */
 			GLCall(glfwSwapBuffers(window));
@@ -147,6 +226,9 @@ int main(void)
 			GLCall(glfwPollEvents());
 		}
 	}
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
 	glfwTerminate();
 	return 0;
 }
