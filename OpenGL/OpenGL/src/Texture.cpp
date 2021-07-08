@@ -44,7 +44,7 @@ void Texture::updateTexture(float h_inc, float s_inc, float v_inc)
 	ASSERT(new_buffer);
 	memcpy(new_buffer, m_buffer, m_width * m_height * 4 * sizeof(char));
 
-	bool proportional_increase = true;
+	bool proportional_increase = false;
 
 	unsigned char* ptr = m_buffer;
 	for (int i = 0; i < m_width * m_height * 4; i+=4)
@@ -79,9 +79,10 @@ void Texture::updateTexture(float h_inc, float s_inc, float v_inc)
 		unsigned char r = (unsigned char) (rf * 255.0f);
 		unsigned char g = (unsigned char) (gf * 255.0f);
 		unsigned char b = (unsigned char) (bf * 255.0f);
-		new_buffer[i] = r;
+		new_buffer[i] = r;  
 		new_buffer[i + 1] = g;
 		new_buffer[i + 2] = b;
+		new_buffer[i + 3] = m_buffer[i + 4]; // alpha
 	}
 
 	GLCall(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, new_buffer));

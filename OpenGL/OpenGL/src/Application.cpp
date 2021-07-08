@@ -28,28 +28,6 @@
 
 int main(void)
 {
-	/*float rr, gg, bb, hh, ss, vv;
-	unsigned char rr_int, gg_int, bb_int;
-	rr_int = 255;
-	gg_int = 20;
-	bb_int = 30;
-	rr = rr_int / 255.0f;
-	gg = gg_int / 255.0f;
-	bb = bb_int / 255.0f;
-	std::cout << (int)rr_int << " " << (int)gg_int << " " << (int)bb_int << " " << std::endl;;
-	
-	RGBtoHSV(rr_int, gg_int, bb_int, hh, ss, vv);
-
-	std::cout << hh << " " << ss * 100 << " " << vv * 100 << " " << std::endl;
-
-	HSVtoRGB(hh, ss, vv, rr_int, gg_int, bb_int);*/
-	/*ImGui::ColorConvertRGBtoHSV(rr, gg, bb, hh, ss, vv);
-	ImGui::ColorConvertHSVtoRGB(hh, ss, vv, rr, gg, bb);*/
-	
-	/*rr_int = rr * 255;
-	gg_int = gg * 255;
-	bb_int = bb * 255;*/
-	//std::cout  << (int)rr_int << " " << (int)gg_int << " " << (int)bb_int << " "<<std::endl;
 	
 	
 	GLFWwindow* window;
@@ -145,10 +123,9 @@ int main(void)
 		ImGui_ImplOpenGL3_Init((char*)glGetString(GL_NUM_SHADING_LANGUAGE_VERSIONS));
 
 
-		float h, s, v, h_prev, s_prev, v_prev;
-		h = s = v = h_prev = s_prev = v_prev = 0.0f;
+		int h, s, v;
+		h = s = v = 0;
 		ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
 
 		float r, g, b, a, increment;
 		r = 1.0f, g = 0.8f, b = 0.8f, a = 1.0f, increment = 0.05f;
@@ -186,25 +163,25 @@ int main(void)
 
 				ImGui::Begin("HSV options");							// Create a window called "Hello, world!" and append into it.
 
-				ImGui::Text("Addust these values as desired");			// Display some text (you can use a format strings too)
+				ImGui::Text("Addust these values as desired");			// Display some text (you can use a format strings too)		
 
-				ImGui::SliderFloat("h", &h, -1.0f, 1.0f);				// Edit 1 float using a slider from 0.0f to 1.0f
-				ImGui::SliderFloat("s", &s, -1.0f, 1.0f);				// Edit 1 float using a slider from 0.0f to 1.0f
-				ImGui::SliderFloat("v", &v, -1.0f, 1.0f);				// Edit 1 float using a slider from 0.0f to 1.0f
+				bool h_slider = ImGui::SliderInt("h", &h, -100, 100);				// Edit 1 int using a slider from -100 to 100
+				bool s_slider = ImGui::SliderInt("s", &s, -100, 100);				// Edit 1 int using a slider from -100 to 100
+				bool v_slider = ImGui::SliderInt("v", &v, -100, 100);				// Edit 1 int using a slider from -100 to 100
+
 				ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+				
+				if (h_slider || s_slider || v_slider)
+				{
+					texture.updateTexture(h/100.f, s/100.0f, v/100.0f);
+					texture.bind();
+				}
 
 				if (ImGui::Button("Button"))								// Buttons return true when clicked (most widgets return true when edited/activated)
 				{
-					if (h != h_prev || s != s_prev || v != v_prev)
-					{
-						h_prev = h;
-						s_prev = s;
-						v_prev = v;
-						texture.updateTexture(h, s, v);
-						texture.bind();
-					}
 					counter++;
 				}
+
 				ImGui::SameLine();
 				ImGui::Text("counter = %d", counter);
 
